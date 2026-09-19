@@ -20,15 +20,25 @@ export type GiftType =
 
 export type MatchMode = "pose-scene" | "scene-only";
 
+export type ArrivalMode = "gps" | "manual";
+
+export type CompletionMode = "photo" | "manual";
+
 export type Checkpoint = {
   id: string;
   label: string;
   mysteryTitle?: string;
   mysteryLabel?: string;
   storyBeat?: string;
+  revealLabel?: string;
   giftType: GiftType;
   location: LatLng;
   unlockRadiusM: number;
+  arrivalMode?: ArrivalMode;
+  completionMode?: CompletionMode;
+  allowManualArrivalFallback?: boolean;
+  arriveButtonLabel?: string;
+  revealButtonLabel?: string;
   referenceImage: string;
   matchMode: MatchMode;
   passScore: number;

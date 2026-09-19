@@ -3,22 +3,73 @@ import { fullTestZones } from "@/src/config/fullTestStory";
 import { fogMessages, zones } from "@/src/config/story";
 import { haversineDistance, projectPositionToMap } from "@/src/lib/geo";
 
-describe("formal story route", () => {
-  it("uses two standalone drives followed by one three-coordinate walking atlas", () => {
-    expect(zones).toHaveLength(3);
-    expect(fogMessages).toHaveLength(2);
-    expect(zones.map((zone) => zone.checkpoints.filter((item) => item.giftType !== "love").length))
-      .toEqual([1, 1, 3]);
-    expect(zones.flatMap((zone) => zone.checkpoints).map((item) => item.giftType))
-      .toEqual(["sound", "motion", "scent", "sparkle", "taste", "love"]);
+const checkpoints = zones.flatMap((zone) => zone.checkpoints);
+
+describe("formal Shanghai story route", () => {
+  it("uses five reveals across four maps and three self-driving transitions", () => {
+    expect(zones).toHaveLength(4);
+    expect(fogMessages).toHaveLength(3);
+    expect(zones.map((zone) => zone.checkpoints.length)).toEqual([1, 1, 2, 1]);
+    expect(checkpoints).toHaveLength(5);
+    expect(fogMessages).toEqual([
+      "你最初的过去",
+      "上海最繁华的地方之一；这个地方是上海最大的；藏着你爱的东西",
+      "欧洲有很多；古时王室居住的地方；以上描述名词存在于地点名字中，可以使用一切搜索手段，如大众点评",
+    ]);
   });
 
-  it("starts each map at the intended parking area", () => {
+  it("uses the confirmed parking and start labels", () => {
     expect(zones.map((zone) => zone.parkingLabel)).toEqual([
-      "经纬国际创意产业园停车场 · 石桥路 279 号",
-      "采荷科普园东侧 · 五安路附近",
-      "杭州来福士中心 · T1 停车区",
+      "东方吉苑北一门 · 板泉路 1201 弄（起点）",
+      "新上海城市广场地下停车场 · 河南南路 33 号（以当日导航为准）",
+      "上海世茂广场地下停车场 · 南京东路 819 号 B3（以当日开放入口为准）",
+      "益丰·外滩源地下停车场 · 北京东路 99 号（以当日开放入口为准）",
     ]);
+  });
+
+  it("keeps the user's revised pre-arrival clue copy verbatim", () => {
+    expect(checkpoints.map((checkpoint) => checkpoint.clue)).toEqual([
+      "是现在我们的家庭成员",
+      "你最初的过去",
+      "上海最繁华的地方之一；这个地方是上海最大的；藏着你爱的东西",
+      "从孩子到大人都喜欢；你不算擅长；我们一起做过；里面有我很喜欢的东西",
+      "欧洲有很多；古时王室居住的地方；以上描述名词存在于地点名字中，可以使用一切搜索手段，如大众点评",
+    ]);
+  });
+
+  it("keeps the five final reveal labels in order", () => {
+    expect(checkpoints.map((checkpoint) => checkpoint.revealLabel)).toEqual([
+      "关于每个女孩子的梦想",
+      "关于我未曾参与的过去",
+      "关于我守护的童心",
+      "关于我参与的现在",
+      "关于我想参与的未来",
+    ]);
+  });
+
+  it("uses manual start, a manual adjacent-store arrival, and a fifth-floor manual reveal", () => {
+    expect(zones[0].checkpoints[0].completionMode).toBe("manual");
+    expect(zones.filter((zone) => zone.id !== "shimao-present").every(
+      (zone) => zone.checkpoints[0].allowManualArrivalFallback,
+    )).toBe(true);
+    expect(zones[2].checkpoints[1]).toMatchObject({
+      id: "lego-present",
+      arrivalMode: "manual",
+      completionMode: "manual",
+      arriveButtonLabel: "我已走到相邻铺位",
+    });
+    expect(zones[3].checkpoints[0]).toMatchObject({
+      id: "castle-future",
+      completionMode: "manual",
+      revealButtonLabel: "我已到达 5 层，手动揭晓",
+    });
+  });
+
+  it("records the restaurant time and address", () => {
+    expect(zones[3].subtitle).toContain("北京东路 99 号");
+    expect(zones[3].subtitle).toContain("L501B-1");
+    expect(zones[3].subtitle).toContain("19:30");
+    expect(zones[3].checkpoints[0].unlockCopy).toContain("19:30");
   });
 
   it("keeps browser positioning, checkpoints and illustrated anchors registered together", () => {
@@ -41,90 +92,55 @@ describe("formal story route", () => {
     }
   });
 
-  it("keeps Aesop, Dior and RUICH on the same walking route", () => {
-    expect(zones[2].checkpoints.slice(0, 3).map((item) => item.label))
-      .toEqual(["Aesop", "Dior", "RUICH"]);
-    expect(zones[2].mysterySubtitle).toContain("三枚坐标");
+  it("keeps POP MART and LEGO in one shared map", () => {
+    expect(zones[2].checkpoints.map((item) => item.label)).toEqual([
+      "POP MART 泡泡玛特上海世茂旗舰店",
+      "LEGO 乐高人民广场旗舰店",
+    ]);
+    expect(zones[2].mysterySubtitle).toContain("同一座建筑");
   });
 
-  it("ships the three field-shot references in third-map order", () => {
-    expect(zones[2].checkpoints.slice(0, 3).map((item) => item.referenceImage))
-      .toEqual([
-        "/references/scent.svg",
-        "/references/sparkle.svg",
-        "/references/taste.svg",
-      ]);
-  });
-
-  it("uses a daylight-tolerant pass score for every formal photo task", () => {
-    const photoCheckpoints = zones
-      .flatMap((zone) => zone.checkpoints)
-      .filter((checkpoint) => checkpoint.giftType !== "love");
-    expect(photoCheckpoints.every((checkpoint) => checkpoint.passScore === 55)).toBe(true);
-  });
-
-  it("uses the field-shot storefront reference for the vinyl task", () => {
-    expect(zones[0].checkpoints[0].referenceImage)
-      .toBe("/references/sound.svg");
-  });
-
-  it("uses one new illustrated map for each of the three formal walking areas", () => {
+  it("uses one new illustrated map for each formal area", () => {
     expect(zones.map((zone) => zone.illustratedMapAsset)).toEqual([
-      "/assets/maps/jingwei-sound-v3.jpg",
-      "/assets/maps/caihe-motion-v4.png",
-      "/assets/maps/qianjiang-grand-north-v4.png",
+      "/assets/maps/shanghai-home-aerial-v2.svg",
+      "/assets/maps/shanghai-yuyuan-aerial-v2.svg",
+      "/assets/maps/shanghai-shimao-aerial-v2.svg",
+      "/assets/maps/shanghai-castle-aerial-v2.svg",
     ]);
   });
 
-  it("keeps the field-tested bicycle pose photo instead of a placeholder", () => {
-    const bicycleZone = zones.find((zone) => zone.id === "motion-district");
-    expect(bicycleZone?.checkpoints[0].referenceImage).toBe("/references/motion.svg");
-  });
-
-  it("locks the two field-tested follow-up maps to their verified WGS-84 endpoints", () => {
-    expect(zones[1].id).toBe("motion-district");
-    expect(zones[1].checkpoints[0]).toMatchObject({
-      id: "liv-motion",
-      label: "Liv",
-      location: { latitude: 30.2597418, longitude: 120.1912823 },
-      unlockRadiusM: 30,
+  it("locks the public POIs to their converted WGS-84 endpoints", () => {
+    expect(zones[1].checkpoints[0].location).toEqual({
+      latitude: 31.230586413,
+      longitude: 121.483040172,
     });
-    expect(zones[2].checkpoints.slice(0, 3).map(({ id, location, unlockRadiusM }) => ({
-      id,
-      location,
-      unlockRadiusM,
-    }))).toEqual([
+    expect(zones[2].checkpoints.map(({ id, location }) => ({ id, location }))).toEqual([
       {
-        id: "aesop-scent",
-        location: { latitude: 30.2552323, longitude: 120.2099383 },
-        unlockRadiusM: 30,
+        id: "popmart-childhood",
+        location: { latitude: 31.23625360496, longitude: 121.47105675633 },
       },
       {
-        id: "dior-sparkle",
-        location: { latitude: 30.253989, longitude: 120.2110951 },
-        unlockRadiusM: 30,
-      },
-      {
-        id: "ruich-taste",
-        location: { latitude: 30.2509232654, longitude: 120.2078163859 },
-        unlockRadiusM: 30,
+        id: "lego-present",
+        location: { latitude: 31.23627499035, longitude: 121.47083703112 },
       },
     ]);
+    expect(zones[3].checkpoints[0].location).toEqual({
+      latitude: 31.24241705704,
+      longitude: 121.48442303755,
+    });
   });
 
   it("keeps every active goal clear of the collapsed left quest panel", () => {
-    for (const zone of zones) {
-      for (const checkpoint of zone.checkpoints) {
-        expect(checkpoint.mapPoint.x).toBeGreaterThanOrEqual(260);
-      }
-    }
+    for (const checkpoint of checkpoints) expect(checkpoint.mapPoint.x).toBeGreaterThanOrEqual(260);
   });
 });
 
 describe("isolated full-test story route", () => {
-  it("mirrors the public example without sharing progress identifiers", () => {
-    expect(fullTestZones).toHaveLength(3);
-    expect(fullTestZones.flatMap((zone) => zone.checkpoints).map((item) => item.giftType))
-      .toEqual(["sound", "motion", "scent", "sparkle", "taste", "love"]);
+  it("mirrors the formal route without sharing progress identifiers", () => {
+    expect(fullTestZones).toHaveLength(4);
+    expect(fullTestZones.flatMap((zone) => zone.checkpoints)).toHaveLength(5);
+    expect(fullTestZones.every((zone) => zone.id.startsWith("fulltest-"))).toBe(true);
+    expect(fullTestZones.flatMap((zone) => zone.checkpoints).every((item) => item.id.startsWith("fulltest-")))
+      .toBe(true);
   });
 });

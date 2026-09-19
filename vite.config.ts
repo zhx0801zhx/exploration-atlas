@@ -1,4 +1,6 @@
 import path from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
+import { sites } from "@openai/sites-vite-plugin";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
@@ -7,6 +9,30 @@ const buildId =
   process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) ??
   process.env.VERCEL_DEPLOYMENT_ID ??
   Date.now().toString(36);
+
+const sitesWorkerSource = `export default {
+  async fetch(request, env) {
+    const response = await env.ASSETS.fetch(request);
+    if (response.status !== 404) return response;
+    const fallbackUrl = new URL(request.url);
+    fallbackUrl.pathname = "/index.html";
+    return env.ASSETS.fetch(new Request(fallbackUrl, request));
+  },
+};
+`;
+
+function sitesStaticWorker() {
+  return {
+    name: "exploration-atlas-sites-static-worker",
+    apply: "build" as const,
+    enforce: "post" as const,
+    async closeBundle() {
+      const serverDirectory = path.resolve(__dirname, "dist/server");
+      await mkdir(serverDirectory, { recursive: true });
+      await writeFile(path.join(serverDirectory, "index.js"), sitesWorkerSource, "utf8");
+    },
+  };
+}
 
 export default defineConfig({
   define: {
@@ -42,10 +68,10 @@ export default defineConfig({
         background_color: "#271b14",
         display: "standalone",
         orientation: "landscape",
-        start_url: "/",
+        start_url: "./",
         icons: [
-          { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
-          { src: "/apple-touch-icon.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+          { src: "icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+          { src: "apple-touch-icon.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
         ],
       },
       injectManifest: {
@@ -54,5 +80,7 @@ export default defineConfig({
       },
       devOptions: { enabled: true },
     }),
+    sites(),
+    sitesStaticWorker(),
   ],
 });

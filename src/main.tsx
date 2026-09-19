@@ -7,8 +7,9 @@ import "../app/globals.css";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
+    const baseUrl = import.meta.env.BASE_URL;
     navigator.serviceWorker
-      .register("/sw.js", { scope: "/", updateViaCache: "none" })
+      .register(`${baseUrl}sw.js`, { scope: baseUrl, updateViaCache: "none" })
       .then((registration) => {
         registration.update().catch(() => undefined);
         document.addEventListener("visibilitychange", () => {
@@ -32,7 +33,7 @@ const storageNamespace =
       ? `fulltest-demo-${runNamespace || "default"}`
     : runNamespace
       ? `formal-${runNamespace}`
-      : "formal-field-sound-v1";
+      : "formal-shanghai-20260920-v1";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

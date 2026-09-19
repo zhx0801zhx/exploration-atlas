@@ -1,12 +1,29 @@
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, extname, resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { dirname, extname, join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 
-const markdownFiles = execFileSync("git", ["ls-files", "-co", "--exclude-standard", "*.md"], {
-  encoding: "utf8",
-})
-  .split("\n")
-  .filter((file) => file && existsSync(file));
+const ignoredDirectories = new Set([".git", "dist", "node_modules", "playwright-report", "test-results"]);
+
+function listMarkdownFiles(directory = ".") {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    if (ignoredDirectories.has(entry.name)) return [];
+    const file = join(directory, entry.name);
+    if (entry.isDirectory()) return listMarkdownFiles(file);
+    return extname(entry.name).toLowerCase() === ".md" ? [file.replace(/^\.\//, "")] : [];
+  });
+}
+
+let markdownFiles;
+try {
+  markdownFiles = execFileSync("git", ["ls-files", "-co", "--exclude-standard", "*.md"], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  })
+    .split("\n")
+    .filter((file) => file && existsSync(file));
+} catch {
+  markdownFiles = listMarkdownFiles();
+}
 
 const failures = [];
 const linkPattern = /!?\[[^\]]*\]\(([^)]+)\)/g;

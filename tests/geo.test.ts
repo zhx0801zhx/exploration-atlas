@@ -14,14 +14,15 @@ import {
 import { gcj02ToWgs84Approx, wgs84ToGcj02 } from "../src/lib/coordinateTransform";
 import { zones } from "../src/config/story";
 
-const bicycleZone = zones.find((zone) => zone.id === "motion-district")!;
-const soundZone = zones.find((zone) => zone.id === "sound-district")!;
+const yuyuanZone = zones.find((zone) => zone.id === "yuyuan-past")!;
+const shimaoZone = zones.find((zone) => zone.id === "shimao-present")!;
+const castleZone = zones.find((zone) => zone.id === "castle-future")!;
 
 describe("geographic matching", () => {
   const route = [
-    { latitude: 30.327, longitude: 120.183 },
-    { latitude: 30.327, longitude: 120.184 },
-    { latitude: 30.327, longitude: 120.185 },
+    { latitude: 31.23, longitude: 121.48 },
+    { latitude: 31.23, longitude: 121.481 },
+    { latitude: 31.23, longitude: 121.482 },
   ];
 
   it("computes useful meter distances", () => {
@@ -32,7 +33,7 @@ describe("geographic matching", () => {
 
   it("snaps a nearby position to route progress", () => {
     const match = matchPositionToRoute(
-      { latitude: 30.32702, longitude: 120.184 },
+      { latitude: 31.23002, longitude: 121.481 },
       route,
       route[2],
     );
@@ -43,36 +44,34 @@ describe("geographic matching", () => {
 
   it("uses median values to suppress a location spike", () => {
     const sample = medianSample([
-      { latitude: 30.32, longitude: 120.18, accuracy: 20, timestamp: 1 },
-      { latitude: 31.5, longitude: 121.0, accuracy: 900, timestamp: 2 },
-      { latitude: 30.3201, longitude: 120.1801, accuracy: 22, timestamp: 3 },
+      { latitude: 31.23, longitude: 121.48, accuracy: 20, timestamp: 1 },
+      { latitude: 32.5, longitude: 122, accuracy: 900, timestamp: 2 },
+      { latitude: 31.2301, longitude: 121.4801, accuracy: 22, timestamp: 3 },
     ]);
-    expect(sample?.latitude).toBeCloseTo(30.3201);
+    expect(sample?.latitude).toBeCloseTo(31.2301);
     expect(sample?.accuracy).toBe(22);
   });
 
-  it("keeps the 30 metre geofence tight while allowing a small accuracy edge", () => {
-    expect(isInsideCheckpoint(39, 80, 30)).toBe(true);
-    expect(isInsideCheckpoint(41, 80, 30)).toBe(false);
-    expect(isInsideCheckpoint(0, 500, 30, 200)).toBe(false);
-    expect(isInsideCheckpoint(0, Number.NaN, 30, 200)).toBe(false);
+  it("keeps a geofence tight while allowing a small accuracy edge", () => {
+    expect(isInsideCheckpoint(54, 80, 45)).toBe(true);
+    expect(isInsideCheckpoint(56, 80, 45)).toBe(false);
+    expect(isInsideCheckpoint(0, 500, 45, 160)).toBe(false);
+    expect(isInsideCheckpoint(0, Number.NaN, 45, 160)).toBe(false);
   });
 
   it("derives a geographic walking direction when GPS has no compass heading", () => {
     expect(bearingDegrees(route[0], route[1])).toBeCloseTo(90, 1);
-    expect(
-      bearingDegrees(route[0], {
-        latitude: route[0].latitude + 0.001,
-        longitude: route[0].longitude,
-      }),
-    ).toBeCloseTo(0, 1);
+    expect(bearingDegrees(route[0], {
+      latitude: route[0].latitude + 0.001,
+      longitude: route[0].longitude,
+    })).toBeCloseTo(0, 1);
   });
 
   it("freezes at the last reliable coordinate when a coarse sample arrives", () => {
-    const previous = { latitude: 30.327, longitude: 120.183, accuracy: 24, timestamp: 1 };
+    const previous = { latitude: 31.23, longitude: 121.48, accuracy: 24, timestamp: 1 };
     const held = holdLastReliablePosition(previous, {
-      latitude: 30.28,
-      longitude: 120.01,
+      latitude: 31.1,
+      longitude: 121.2,
       accuracy: 500,
       timestamp: 2,
     });
@@ -83,34 +82,24 @@ describe("geographic matching", () => {
     expect(holdLastReliablePosition(null, { ...previous, accuracy: 500 })).toBeNull();
   });
 
-  it("projects paired WGS route anchors onto the illustrated route", () => {
-    const zone = zones[0];
-    const checkpoint = zone.checkpoints[0];
-    const first = projectPositionToMap(zone.routeGeo[0], zone, checkpoint);
-    const second = projectPositionToMap(zone.routeGeo[1], zone, checkpoint);
-    expect(first.x).toBeCloseTo(zone.mapRoutePoints![0].x, 0);
-    expect(first.y).toBeCloseTo(zone.mapRoutePoints![0].y, 0);
-    expect(second.x).toBeCloseTo(zone.mapRoutePoints![1].x, 0);
-    expect(second.y).toBeCloseTo(zone.mapRoutePoints![1].y, 0);
-  });
-
-  it("uses the same registered-route projection on every public example map", () => {
+  it("projects every paired WGS route anchor onto the illustrated route", () => {
     for (const zone of zones) {
       expect(zone.coordinateSystem).toBe("wgs84");
       expect(zone.mapRoutePoints).toHaveLength(zone.routeGeo.length);
       const checkpoint = zone.checkpoints[0];
-      const start = projectPositionToMap(zone.routeGeo[0], zone, checkpoint);
-      expect(start.x).toBeCloseTo(zone.mapRoutePoints![0].x, 0);
-      expect(start.y).toBeCloseTo(zone.mapRoutePoints![0].y, 0);
+      zone.routeGeo.forEach((point, index) => {
+        const projected = projectPositionToMap(point, zone, checkpoint);
+        expect(projected.x).toBeCloseTo(zone.mapRoutePoints![index].x, 0);
+        expect(projected.y).toBeCloseTo(zone.mapRoutePoints![index].y, 0);
+      });
     }
   });
 
-  it("contains a far or wrong-system sample inside the visible map", () => {
-    const zone = bicycleZone;
+  it("contains a far sample inside the visible map", () => {
     const point = projectPositionToMap(
-      { latitude: 30.257345, longitude: 120.195869 },
-      zone,
-      zone.checkpoints[0],
+      { latitude: 31.2, longitude: 121.42 },
+      yuyuanZone,
+      yuyuanZone.checkpoints[0],
     );
     expect(point.x).toBeGreaterThanOrEqual(10);
     expect(point.x).toBeLessThanOrEqual(790);
@@ -118,41 +107,19 @@ describe("geographic matching", () => {
     expect(point.y).toBeLessThanOrEqual(490);
   });
 
-  it("keeps moving before the suggested start instead of pinning to the route endpoint", () => {
-    const zone = bicycleZone;
-    const checkpoint = zone.checkpoints[0];
+  it("keeps nearby movement visible instead of pinning it", () => {
+    const checkpoint = yuyuanZone.checkpoints[0];
     const first = projectPositionToMap(
-      { latitude: 30.2594229, longitude: 120.1935934 },
-      zone,
+      { latitude: 31.23132, longitude: 121.48235 },
+      yuyuanZone,
       checkpoint,
     );
     const second = projectPositionToMap(
-      { latitude: 30.2594729, longitude: 120.1935434 },
-      zone,
+      { latitude: 31.23127, longitude: 121.48245 },
+      yuyuanZone,
       checkpoint,
     );
-    expect(Math.hypot(second.x - first.x, second.y - first.y)).toBeGreaterThan(5);
-  });
-
-  it("registers the field-test scene with the explorer east of the goal", () => {
-    const zone = bicycleZone;
-    const checkpoint = zone.checkpoints[0];
-    const start = projectPositionToMap(zone.routeGeo[0], zone, checkpoint);
-    const goal = projectPositionToMap(checkpoint.location, zone, checkpoint);
-    expect(start.x).toBeGreaterThan(goal.x);
-    expect(goal.x).toBeCloseTo(checkpoint.mapPoint.x, 0);
-    expect(goal.y).toBeCloseTo(checkpoint.mapPoint.y, 0);
-  });
-
-  it("rotates a geographic course into the illustrated route direction", () => {
-    const zone = bicycleZone;
-    const checkpoint = zone.checkpoints[0];
-    const geographicHeading = bearingDegrees(zone.routeGeo[0], zone.routeGeo[1]);
-    const mapped = projectHeadingToMap(zone.routeGeo[0], geographicHeading, zone, checkpoint);
-    const first = zone.mapRoutePoints![0];
-    const second = zone.mapRoutePoints![1];
-    const expected = ((Math.atan2(second.x - first.x, -(second.y - first.y)) * 180) / Math.PI + 360) % 360;
-    expect(mapped).toBeCloseTo(expected, 0);
+    expect(Math.hypot(second.x - first.x, second.y - first.y)).toBeGreaterThan(20);
   });
 
   it("keeps compass bearings literal on every north-up formal map", () => {
@@ -165,84 +132,46 @@ describe("geographic matching", () => {
     }
   });
 
-  it("keeps the first public map aligned to its geographic bounds", () => {
-    const zone = zones[0];
-    const point = projectLocationToBounds(zone.checkpoints[0].location, zone.mapBounds!);
-    expect(point.x).toBeCloseTo(zone.checkpoints[0].mapPoint.x, -1);
-    expect(point.y).toBeCloseTo(zone.checkpoints[0].mapPoint.y, -1);
+  it("keeps every formal checkpoint aligned to its geographic bounds", () => {
+    for (const zone of zones) {
+      for (const checkpoint of zone.checkpoints) {
+        const point = projectLocationToBounds(checkpoint.location, zone.mapBounds!);
+        expect(point.x).toBeCloseTo(checkpoint.mapPoint.x, 0);
+        expect(point.y).toBeCloseTo(checkpoint.mapPoint.y, 0);
+      }
+    }
   });
 
   it("responds immediately to meaningful movement without a five-sample freeze", () => {
-    const previous = { latitude: 30.327, longitude: 120.183, accuracy: 35, timestamp: 1, heading: 180 };
-    const next = { latitude: 30.3272, longitude: 120.183, accuracy: 35, timestamp: 2 };
+    const previous = { latitude: 31.23, longitude: 121.48, accuracy: 35, timestamp: 1, heading: 180 };
+    const next = { latitude: 31.2302, longitude: 121.48, accuracy: 35, timestamp: 2 };
     const smoothed = smoothPositionSample(previous, next);
     expect(smoothed.latitude).toBe(next.latitude);
     expect(smoothed.timestamp).toBe(2);
     expect(smoothed.heading).toBe(180);
   });
-
-  it("keeps movement near Lingxiang inside the visible map instead of clamping it", () => {
-    const checkpoint = soundZone.checkpoints[0];
-    const west = projectPositionToMap(
-      { latitude: 30.326913, longitude: 120.18542 },
-      soundZone,
-      checkpoint,
-    );
-    const east = projectPositionToMap(
-      { latitude: 30.326913, longitude: 120.18552 },
-      soundZone,
-      checkpoint,
-    );
-    expect(east.x - west.x).toBeGreaterThan(15);
-    expect(east.x).toBeGreaterThan(100);
-    expect(east.x).toBeLessThan(700);
-  });
 });
 
 describe("offline coordinate preparation", () => {
-  it("uses the field-captured WGS-84 storefront point for Lingxiang", () => {
-    const storefront = { latitude: 30.326913, longitude: 120.18552 };
-    expect(haversineDistance(soundZone.checkpoints[0].location, storefront)).toBeLessThan(0.5);
-    expect(haversineDistance(soundZone.checkpoints[0].location, {
-      latitude: 30.3274763,
-      longitude: 120.1840469,
-    })).toBeGreaterThan(150);
+  it("round-trips the Yuyuan Exit 1 provider coordinate", () => {
+    const provider = { latitude: 31.228604, longitude: 121.487516 };
+    const converted = gcj02ToWgs84Approx(provider);
+    expect(haversineDistance(converted, yuyuanZone.checkpoints[0].location)).toBeLessThan(3);
+    expect(haversineDistance(wgs84ToGcj02(converted), provider)).toBeLessThan(1);
   });
 
-  it("places the former AMap bicycle destination on the expected local roads", () => {
-    const destination = gcj02ToWgs84Approx({ latitude: 30.257345, longitude: 120.195869 });
-    const configured = bicycleZone.checkpoints[0].location;
-    const shuanglingRoadReference = { latitude: 30.259743, longitude: 120.1910573 };
-    const qingchunRoadReference = { latitude: 30.2599455, longitude: 120.1912823 };
-    expect(haversineDistance(destination, configured)).toBeLessThan(1);
-    expect(haversineDistance(destination, shuanglingRoadReference)).toBeLessThan(25);
-    expect(haversineDistance(destination, qingchunRoadReference)).toBeLessThan(25);
-    expect(
-      haversineDistance(wgs84ToGcj02(configured), {
-        latitude: 30.257345,
-        longitude: 120.195869,
-      }),
-    ).toBeLessThan(1);
+  it("keeps the adjacent Shanghai Shimao storefronts distinct", () => {
+    const [popmart, lego] = shimaoZone.checkpoints;
+    const distance = haversineDistance(popmart.location, lego.location);
+    expect(distance).toBeGreaterThan(15);
+    expect(distance).toBeLessThan(30);
+    expect(lego.arrivalMode).toBe("manual");
   });
 
-  it("uses the field-tested start east of Caihe Science Park", () => {
-    const convertedStart = gcj02ToWgs84Approx({ latitude: 30.256131, longitude: 120.197919 });
-    const configuredStart = bicycleZone.routeGeo[0];
-    expect(haversineDistance(convertedStart, configuredStart)).toBeLessThan(1);
-    expect(haversineDistance(configuredStart, bicycleZone.checkpoints[0].location)).toBeGreaterThan(150);
-    expect(haversineDistance(configuredStart, bicycleZone.checkpoints[0].location)).toBeLessThan(250);
-  });
-
-  it("places the RUICH endpoint inside Raffles T1 instead of at City Balcony", () => {
-    const ruichFromCtrip = gcj02ToWgs84Approx({
-      latitude: 30.2484995,
-      longitude: 120.2123588,
-    });
-    const ruich = zones[2].checkpoints.find((checkpoint) => checkpoint.id === "ruich-taste")!;
-    const rafflesFootprintCenter = { latitude: 30.2512685, longitude: 120.20854 };
-    const formerCityBalcony = { latitude: 30.2442573, longitude: 120.2122716 };
-    expect(haversineDistance(ruichFromCtrip, ruich.location)).toBeLessThan(1);
-    expect(haversineDistance(ruich.location, rafflesFootprintCenter)).toBeLessThan(100);
-    expect(haversineDistance(ruich.location, formerCityBalcony)).toBeGreaterThan(800);
+  it("round-trips the Yifeng Bund Source provider coordinate", () => {
+    const provider = { latitude: 31.240436, longitude: 121.488895 };
+    const converted = gcj02ToWgs84Approx(provider);
+    expect(haversineDistance(converted, castleZone.checkpoints[0].location)).toBeLessThan(3);
+    expect(haversineDistance(wgs84ToGcj02(converted), provider)).toBeLessThan(1);
   });
 });

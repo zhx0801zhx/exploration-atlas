@@ -92,6 +92,49 @@ function AtlasFurniture() {
   );
 }
 
+const revealedLabels: Record<string, Array<{ text: string; x: number; y: number; rotate?: number }>> = {
+  "home-start": [
+    { text: "板 泉 路", x: 286, y: 220 },
+    { text: "东 明 路", x: 94, y: 94, rotate: 90 },
+    { text: "云 台 路", x: 619, y: 85, rotate: 90 },
+  ],
+  "yuyuan-past": [
+    { text: "人 民 路", x: 315, y: 337 },
+    { text: "河 南 南 路", x: 407, y: 75, rotate: 90 },
+    { text: "金 陵 东 路", x: 92, y: 174 },
+    { text: "紫 金 路", x: 187, y: 90, rotate: 90 },
+  ],
+  "shimao-present": [
+    { text: "南 京 东 路 步 行 街", x: 300, y: 250 },
+    { text: "西 藏 中 路", x: 105, y: 83, rotate: 90 },
+    { text: "九 江 路", x: 290, y: 103 },
+    { text: "福 州 路", x: 280, y: 399 },
+  ],
+  "castle-future": [
+    { text: "北 京 东 路", x: 270, y: 239 },
+    { text: "圆 明 园 路", x: 410, y: 72, rotate: 90 },
+    { text: "四 川 中 路", x: 126, y: 82, rotate: 90 },
+    { text: "香 港 路", x: 282, y: 355 },
+  ],
+};
+
+function RevealedMapLabels({ zoneId }: { zoneId: string }) {
+  return (
+    <g className="revealed-map-labels" aria-label="已揭晓道路信息">
+      {(revealedLabels[zoneId] ?? []).map((label) => (
+        <text
+          key={label.text}
+          x={label.x}
+          y={label.y}
+          transform={label.rotate ? `rotate(${label.rotate} ${label.x} ${label.y})` : undefined}
+        >
+          {label.text}
+        </text>
+      ))}
+    </g>
+  );
+}
+
 function DistrictBlueprint({ kind }: { kind: ExplorationZone["mapKind"] }) {
   if (kind === "arcade") {
     return (
@@ -369,7 +412,7 @@ export function MapCanvas({
   }
 
   function moveGesture(event: React.PointerEvent<HTMLDivElement>) {
-    if (!pointers.current.has(event.pointerId) || arrived) return;
+    if (!pointers.current.has(event.pointerId) || !arrived) return;
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     const center = pointerCenter();
     if (pointers.current.size >= 2) {
@@ -396,14 +439,21 @@ export function MapCanvas({
   }
 
   return (
-    <div className="map-stage" aria-label={`${displayedTitle} 活点地图`} onClick={onMapFocus}>
-      <div className="map-tools" aria-label="地图缩放">
-        <button onClick={() => setZoom((value) => Math.min(1.18, value + 0.08))}>＋</button>
-        <button onClick={() => setZoom((value) => Math.max(0.92, value - 0.08))}>−</button>
-      </div>
+    <div
+      className={`map-stage ${arrived ? "is-revealed" : "is-concealed"}`}
+      data-concealed={arrived ? "false" : "true"}
+      aria-label={arrived ? `${displayedTitle} 活点地图` : "被云雾封印的未知地图"}
+      onClick={onMapFocus}
+    >
+      {arrived && (
+        <div className="map-tools" aria-label="地图缩放">
+          <button onClick={() => setZoom((value) => Math.min(1.35, value + 0.08))}>＋</button>
+          <button onClick={() => setZoom((value) => Math.max(0.92, value - 0.08))}>−</button>
+        </div>
+      )}
       <motion.div
-        className="map-camera"
-        aria-label="可拖拽和双指缩放的探索地图"
+        className={`map-camera ${arrived ? "is-revealed" : "is-concealed"}`}
+        aria-label={arrived ? "可拖拽和双指缩放的探索地图" : "定位完成后才会显影的地图"}
         data-zoom={zoom.toFixed(2)}
         data-pan={`${Math.round(pan.x)},${Math.round(pan.y)}`}
         animate={{ scale: zoom, x: pan.x, y: pan.y }}
@@ -441,11 +491,12 @@ export function MapCanvas({
               onError={() => setFailedAsset(illustratedMap)}
             />
           )}
-          <AtlasFurniture />
-          <g className="legacy-blueprint"><DistrictBlueprint kind={zone.mapKind} /></g>
-          <path className="route-path route-path-aura" d={displayedRoutePath} aria-hidden="true" />
-          <path className="route-path" d={displayedRoutePath} />
-          {pawTrail.map((point) => {
+          {arrived && <AtlasFurniture />}
+          {arrived && <g className="legacy-blueprint"><DistrictBlueprint kind={zone.mapKind} /></g>}
+          {arrived && <RevealedMapLabels zoneId={zone.id} />}
+          {arrived && <path className="route-path route-path-aura" d={displayedRoutePath} aria-hidden="true" />}
+          {arrived && <path className="route-path" d={displayedRoutePath} />}
+          {arrived && pawTrail.map((point) => {
             return (
               <g
                 key={point.id}
@@ -464,21 +515,19 @@ export function MapCanvas({
               </g>
             );
           })}
-          <g
+          {arrived && <g
             transform={`translate(${goalMapPoint.x} ${goalMapPoint.y})`}
-            className={`atlas-point goal-point ${arrived ? "arrived" : ""}`}
+            className="atlas-point goal-point arrived"
             data-map-x={goalMapPoint.x.toFixed(1)}
             data-map-y={goalMapPoint.y.toFixed(1)}
             role="img"
-            aria-label={arrived ? `目的地 ${checkpoint.label}` : "尚未揭晓的目的地"}
+            aria-label={`目的地 ${checkpoint.label}`}
           >
-            {arrived && (
-              <g className="goal-arrival-burst" aria-hidden="true">
-                <circle r="8" className="goal-arrival-ripple ripple-one" />
-                <circle r="8" className="goal-arrival-ripple ripple-two" />
-                <path d="M0-25V-16M17.7-17.7l-6.4 6.4M25 0H16M17.7 17.7l-6.4-6.4M0 25V16M-17.7 17.7l6.4-6.4M-25 0h9M-17.7-17.7l6.4 6.4" />
-              </g>
-            )}
+            <g className="goal-arrival-burst" aria-hidden="true">
+              <circle r="8" className="goal-arrival-ripple ripple-one" />
+              <circle r="8" className="goal-arrival-ripple ripple-two" />
+              <path d="M0-25V-16M17.7-17.7l-6.4 6.4M25 0H16M17.7 17.7l-6.4-6.4M0 25V16M-17.7 17.7l6.4-6.4M-25 0h9M-17.7-17.7l6.4 6.4" />
+            </g>
             <circle r="9" className="point-glow" />
             <circle r="6" className="point-ring" />
             <circle r="3.4" className="point-core" />
@@ -486,13 +535,13 @@ export function MapCanvas({
               <rect x="-16" y="-7" width="32" height="14" rx="7" />
               <text y="3.2">GOAL</text>
             </g>
-          </g>
-          {completedIds.map((id, index) => (
+          </g>}
+          {arrived && completedIds.map((id, index) => (
             <g key={id} transform={`translate(${675 + index * 24} 445)`} className="wax-dot">
               <circle r="8" /><path d="m-4 0 3 3 6-7" />
             </g>
           ))}
-          <motion.g
+          {arrived && position && <motion.g
             initial={false}
             animate={{ x: marker.x, y: marker.y }}
             transition={{ duration: 0.12, ease: "easeOut" }}
@@ -517,19 +566,25 @@ export function MapCanvas({
             <circle r="9" className="point-glow" />
             <circle r="6" className="point-ring" />
             <circle r="3.4" className="point-core" />
-          </motion.g>
-          <g className="map-cartouche" transform="translate(42 34)">
+          </motion.g>}
+          {arrived && <g className="map-cartouche" transform="translate(42 34)">
             <path d="M0 0h330l-14 34H0l10-17z" />
             <text x="20" y="16" className="map-title">{displayedTitle}</text>
             <text x="20" y="29" className="map-subtitle">{displayedSubtitle}</text>
-          </g>
+          </g>}
         </svg>
         <MapMagicOverlay giftType={checkpoint.giftType} revealed={arrived} />
       </motion.div>
-      {illustratedMap && failedAsset === illustratedMap && (
+      {arrived && illustratedMap && failedAsset === illustratedMap && (
         <div className="map-illustration-fallback">高清底图暂未载入，已切换线稿模式</div>
       )}
-      {!locationReliable && <div className="map-fog map-fog-local" aria-hidden="true" />}
+      {!arrived && (
+        <div className="map-concealment" role="status" aria-live="polite">
+          <div className="concealment-seal" aria-hidden="true"><span>✦</span></div>
+          <strong>地图尚未显影</strong>
+          <small>完成 GPS 或手动抵达后，道路与坐标才会出现</small>
+        </div>
+      )}
     </div>
   );
 }

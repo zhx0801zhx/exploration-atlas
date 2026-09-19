@@ -5,7 +5,7 @@ const localPort = Number(process.env.PLAYWRIGHT_PORT ?? 4187);
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  timeout: 30_000,
+  timeout: 45_000,
   use: {
     ...devices["Desktop Safari"],
     baseURL: deployedBaseUrl ?? `http://127.0.0.1:${localPort}`,

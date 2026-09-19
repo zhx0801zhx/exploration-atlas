@@ -7,12 +7,12 @@
  */
 export const experienceConfig = {
   recipientName: "探索者",
-  deliveryLabel: "PRIVATE DELIVERY · TO THE EXPLORER",
+  deliveryLabel: "PRIVATE DELIVERY · 2026.09.20",
   publicDemo: {
     // Keep this on in the open-source template so first-time visitors can
     // preview the whole journey without travelling to the example locations.
     // Turn it off for the recipient-facing private deployment.
-    enabled: true,
+    enabled: false,
   },
   chapter: {
     from: "PAST",
@@ -21,22 +21,22 @@ export const experienceConfig = {
     lastPage: "THE LAST PAGE OF THE PAST",
   },
   opening: {
-    lead: "今天，是一位探索者的魔法入学日。",
+    lead: "今天，是一场只为你展开的城市探索。",
     lines: [
-      "杭州这座城市，正在因为你而暗潮涌动。",
-      "在不知名的某处地方，将翻转出特殊的惊喜。",
+      "上海的五个地点，藏着过去、现在与未来。",
+      "开始时间由你决定，按下印章的那一刻，整场探索才会开启。",
     ],
-    edition: "CUSTOM BIRTHDAY EDITION",
+    edition: "SHANGHAI · FIVE CHAPTERS EDITION",
   },
   finale: {
     transition: "THE PAST HAS BEEN KEPT · A NEW CHAPTER BEGINS",
     lines: [
-      "过去一岁的故事，已经被好好收藏。",
-      "现在，请翻开新一岁的第一章，今年的主题是探索。",
-      "无论走到哪里，都愿你保有发现世界的好奇与被爱包围的勇气。",
+      "五页故事，已经被好好收藏。",
+      "过去没有错过，现在正在同行，未来也想继续参与。",
+      "2026 年 9 月 20 日的探索到这里完成，下一章从今晚开始。",
     ],
-    signature: "Happy Birthday, Explorer.",
-    continueLabel: "翻开新一岁的第一章",
+    signature: "TO THE PAST, THE PRESENT, AND THE FUTURE.",
+    continueLabel: "打开属于未来的一页",
   },
   optionalMedia: {
     introFilm: {

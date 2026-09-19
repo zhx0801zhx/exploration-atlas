@@ -126,8 +126,13 @@ export function ExplorationApp({
   const checkpoint =
     storyZones.flatMap((item) => item.checkpoints).find((item) => item.id === progress.activeCheckpointId) ??
     storyZones[0].checkpoints[0];
+  const upcomingZone = storyZones[zone.order];
   const location = useGeolocation(
-    !demoMode && hydrated && progress.phase === "map" && progress.zoneStarted,
+    !demoMode &&
+      hydrated &&
+      progress.phase === "map" &&
+      progress.zoneStarted &&
+      checkpoint.arrivalMode !== "manual",
     zone.maxLocationAccuracyM,
   );
   const deviceHeading = useDeviceHeading();
@@ -155,6 +160,7 @@ export function ExplorationApp({
   );
   const concealedTitle = checkpoint.mysteryTitle ?? `第${coordinateNumber}枚未知坐标`;
   const concealedLabel = checkpoint.mysteryLabel ?? "答案尚在雾中";
+  const revealedGiftLabel = checkpoint.revealLabel ?? giftNames[checkpoint.giftType];
   const displayedZoneTitle = arrived
     ? zone.title
     : zone.mysteryTitle ?? `PAST CHAPTER · PAGE ${String(zone.order).padStart(2, "0")}`;
@@ -237,7 +243,14 @@ export function ExplorationApp({
   }, [hydrated, progress, storageNamespace]);
 
   useEffect(() => {
-    if (!position || !locationReliable || arrived || !progress.zoneStarted || progress.phase !== "map") {
+    if (
+      checkpoint.arrivalMode === "manual" ||
+      !position ||
+      !locationReliable ||
+      arrived ||
+      !progress.zoneStarted ||
+      progress.phase !== "map"
+    ) {
       setInsideStreak(0);
       return;
     }
@@ -317,7 +330,8 @@ export function ExplorationApp({
     const nextInZone = zone.checkpoints[checkpointIndex + 1];
     if (nextInZone) {
       const alreadyAtNext = Boolean(
-        position &&
+        nextInZone.arrivalMode !== "manual" &&
+          position &&
           isInsideCheckpoint(
             matchPositionToRoute(position, zone.routeGeo, nextInZone.location).distanceToCheckpointM,
             position.accuracy,
@@ -373,6 +387,14 @@ export function ExplorationApp({
     setProgress((current) => ({
       ...current,
       zoneStarted: true,
+      arrivedCheckpointIds: [...new Set([...current.arrivedCheckpointIds, checkpoint.id])],
+    }));
+  }
+
+  function manuallyArrive() {
+    setInsideStreak(0);
+    setProgress((current) => ({
+      ...current,
       arrivedCheckpointIds: [...new Set([...current.arrivedCheckpointIds, checkpoint.id])],
     }));
   }
@@ -558,10 +580,10 @@ export function ExplorationApp({
                       ? "你可以查看照片任务，或直接揭晓这一关。"
                       : "点击按钮，模拟走到当前目标地点。"}
           </strong>
-          {progress.phase === "map" && checkpoint.giftType !== "love" && (
-            <button type="button" onClick={arrived ? () => void completeCheckpoint() : demoArrive}>
-              {arrived ? "跳过照片，查看揭晓" : "模拟抵达当前地点"}
-            </button>
+            {progress.phase === "map" && checkpoint.giftType !== "love" && (
+              <button type="button" onClick={arrived ? () => void completeCheckpoint() : demoArrive}>
+              {arrived ? "查看揭晓" : "模拟抵达当前地点"}
+              </button>
           )}
         </aside>
       )}
@@ -621,7 +643,7 @@ export function ExplorationApp({
         {progress.phase === "fog" && (
           <motion.section className="fog-screen" key="fog" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="fog-layer one"/><div className="fog-layer two"/>
-            <div className="fog-content"><div className="spinning-compass">✦</div><span>TURNING THE PAGE · {experienceConfig.chapter.transition}</span><h2>{fogMessages[(zone.order - 1) % fogMessages.length]}</h2><p>请使用正常导航驾驶飞行扫帚。停稳并下车后，再让下一页从云雾中显形。</p><button className="primary-button" onClick={arriveNextZone}>我已停车，翻开下一页</button></div>
+            <div className="fog-content"><div className="spinning-compass">✦</div><span>抵达前线索 · {experienceConfig.chapter.transition}</span><h2>{fogMessages[(zone.order - 1) % fogMessages.length]}</h2><p>解出地点后，请使用正常导航自驾前往。车辆停稳并下车后，再让下一页从云雾中显形。</p>{upcomingZone && <details className="parking-help"><summary>需要停车提示</summary><p>建议导航：{upcomingZone.parkingLabel}</p><small>车场入口与余位可能临时变化，请以当日导航和现场指引为准。</small></details>}<button className="primary-button" onClick={arriveNextZone}>我已停车，翻开下一页</button></div>
           </motion.section>
         )}
 
@@ -647,19 +669,25 @@ export function ExplorationApp({
                 >{questExpanded ? "收起" : "查看线索"}</button>
                 <div className="quest-medallion" aria-hidden="true"><span className="quest-number">{String(coordinateNumber).padStart(2, "0")}</span></div>
                 <span className="eyebrow">{arrived ? "COORDINATE REVEALED" : experienceConfig.chapter.lastPage}</span>
-                <h2>{arrived ? checkpoint.label : concealedTitle}<small>{arrived ? giftNames[checkpoint.giftType] : concealedLabel}</small></h2>
+                <h2>{arrived ? checkpoint.label : concealedTitle}<small>{arrived ? revealedGiftLabel : concealedLabel}</small></h2>
                 {questExpanded && checkpoint.storyBeat && <p className="quest-story-beat">{checkpoint.storyBeat}</p>}
                 {questExpanded && <p className="quest-clue">{checkpoint.clue}</p>}
-                <div className="distance-row"><span>{arrived ? "已经抵达" : position && !locationReliable ? "墨点已冻结" : formatDistance(routeMatch.distanceToCheckpointM)}</span><small>{position ? `精度 ±${Math.round(position.accuracy)}m` : "Wi‑Fi iPad 粗定位"}</small></div>
+                <div className="distance-row"><span>{arrived ? "已经抵达" : checkpoint.arrivalMode === "manual" ? "无需再次定位" : position && !locationReliable ? "墨点已冻结" : formatDistance(routeMatch.distanceToCheckpointM)}</span><small>{checkpoint.arrivalMode === "manual" ? "请在相邻铺位手动确认" : position ? `精度 ±${Math.round(position.accuracy)}m` : "Wi‑Fi iPad 粗定位"}</small></div>
                 {questExpanded && location.error && !arrived && <div className="location-warning">{location.error}<button onClick={location.retry}>重试</button></div>}
                 {checkpoint.giftType === "love" ? (
                   <button className="primary-button" onClick={() => completeCheckpoint()}>打开最后一封信</button>
                 ) : !progress.zoneStarted ? (
                   <button className="primary-button" onClick={startExploration}>飞行扫帚已抵达，开始探索</button>
+                ) : !arrived && checkpoint.arrivalMode === "manual" ? (
+                  <button className="primary-button" onClick={manuallyArrive}>{checkpoint.arriveButtonLabel ?? "我已抵达，手动确认"}</button>
                 ) : arrived ? (
-                  <button className="primary-button" onClick={() => setCameraOpen(true)}>开启照片复刻</button>
+                  checkpoint.completionMode === "manual" ? (
+                    <button className="primary-button" onClick={() => void completeCheckpoint()}>{checkpoint.revealButtonLabel ?? "手动揭晓这一页"}</button>
+                  ) : (
+                    <button className="primary-button" onClick={() => setCameraOpen(true)}>开启照片复刻</button>
+                  )
                 ) : (
-                  <><button className="secondary-button" onClick={location.retry}>重新定位</button>{questExpanded && <p className="tiny-note">定位连续两次进入约 {checkpoint.unlockRadiusM} 米范围后，照片任务会自动出现。</p>}</>
+                  <><button className="secondary-button" onClick={location.retry}>重新定位</button>{checkpoint.allowManualArrivalFallback && <button className="secondary-button" onClick={manuallyArrive}>{checkpoint.arriveButtonLabel ?? "定位不准？我已在入口"}</button>}{questExpanded && <p className="tiny-note">定位连续两次进入约 {checkpoint.unlockRadiusM} 米范围后即可揭晓；定位漂移时可使用入口确认兜底。</p>}</>
                 )}
               </aside>
             </div>
@@ -671,7 +699,7 @@ export function ExplorationApp({
             <div className="finale-generated-rune" aria-hidden="true" />
             <div className="finale-content">
               <div className="final-heart" aria-hidden="true"><i/><span>♡</span></div><span>{experienceConfig.finale.transition}</span><h1>Exploration<br/>Completed</h1><blockquote>{experienceConfig.finale.lines.map((line) => <Fragment key={line}>{line}<br/></Fragment>)}<b>{experienceConfig.finale.signature}</b></blockquote>
-              <div className="gallery-strip">{photos.length ? photos.map((photo) => <button key={photo.id} onClick={() => sharePhoto(photo)}><img src={photo.dataUrl} alt="探索复刻照片"/><span>{photo.score} 分 · 保存</span></button>) : <p>完成照片关卡后，探索相册会出现在这里。</p>}</div>
+              <div className="gallery-strip">{photos.length ? photos.map((photo) => <button key={photo.id} onClick={() => sharePhoto(photo)}><img src={photo.dataUrl} alt="探索复刻照片"/><span>{photo.score} 分 · 保存</span></button>) : <p>五页故事已经收好，新的故事从今晚开始。</p>}</div>
               {isRehearsalFlow && <button className="secondary-button" onClick={() => resetAll(true)}>重新彩排</button>}
             </div>
           </motion.section>
@@ -686,7 +714,7 @@ export function ExplorationApp({
             <motion.section className="unlock-card" initial={{ scale: 0.7, rotate: -3 }} animate={{ scale: 1, rotate: 0 }}>
               <MagicMicroEffect variant="star-trail" />
               <div className="unlock-generated-rune" aria-hidden="true" />
-              <div className="unlock-seal">{checkpoint.giftType === "love" ? "♡" : "✦"}</div><span>PAGE {String(coordinateNumber).padStart(2, "0")} · REVEALED</span><h2>{checkpoint.label}<small>{giftNames[checkpoint.giftType]}</small></h2>{checkpoint.storyBeat && <blockquote className="unlock-story-beat">{checkpoint.storyBeat}</blockquote>}<p>{checkpoint.unlockCopy}</p>{lastResult && <small>照片匹配度 {lastResult.score}%{lastResult.poseScore === null ? " · 场景匹配模式" : " · 姿势已识别"}</small>}<button className="primary-button" onClick={continueAfterUnlock}>{checkpoint.giftType === "love" ? experienceConfig.finale.continueLabel : zone.checkpoints[zone.checkpoints.findIndex((item) => item.id === checkpoint.id) + 1] ? "寻找下一枚未知坐标" : "带着这一页返回飞行扫帚"}</button>
+              <div className="unlock-seal">{checkpoint.giftType === "love" ? "♡" : "✦"}</div><span>PAGE {String(coordinateNumber).padStart(2, "0")} · REVEALED</span><h2>{checkpoint.label}<small>{revealedGiftLabel}</small></h2>{checkpoint.storyBeat && <blockquote className="unlock-story-beat">{checkpoint.storyBeat}</blockquote>}<p>{checkpoint.unlockCopy}</p>{lastResult && <small>照片匹配度 {lastResult.score}%{lastResult.poseScore === null ? " · 场景匹配模式" : " · 姿势已识别"}</small>}<button className="primary-button" onClick={continueAfterUnlock}>{checkpoint.giftType === "love" ? experienceConfig.finale.continueLabel : zone.checkpoints[zone.checkpoints.findIndex((item) => item.id === checkpoint.id) + 1] ? "寻找下一枚未知坐标" : zone.order === storyZones.length ? experienceConfig.finale.continueLabel : "带着这一页返回飞行扫帚"}</button>
             </motion.section>
           </motion.div>
         )}

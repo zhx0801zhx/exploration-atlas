@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 const textExtensions = new Set([
@@ -29,11 +29,35 @@ if (existsSync(".private-audit-terms")) {
   }
 }
 
-const files = execFileSync("git", ["ls-files", "-co", "--exclude-standard"], {
-  encoding: "utf8",
-})
-  .split("\n")
-  .filter(Boolean);
+const ignoredDirectories = new Set([
+  ".git",
+  "dist",
+  "node_modules",
+  "playwright-report",
+  "test-results",
+]);
+
+function listVisibleFiles(directory = ".") {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    if (ignoredDirectories.has(entry.name)) return [];
+    const file = path.join(directory, entry.name);
+    return entry.isDirectory() ? listVisibleFiles(file) : [file.replace(/^\.\//, "")];
+  });
+}
+
+let files;
+try {
+  files = execFileSync("git", ["ls-files", "-co", "--exclude-standard"], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  })
+    .split("\n")
+    .filter(Boolean);
+} catch {
+  // Zip downloads and minimal macOS environments may not have a working Git
+  // binary. Scan the project tree directly while excluding generated output.
+  files = listVisibleFiles();
+}
 
 const findings = [];
 
