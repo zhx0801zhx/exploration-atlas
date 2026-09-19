@@ -59,7 +59,7 @@ test("starts manually at the confirmed north gate with the exact first clue", as
   await openAtlas(page);
   await expect(page.locator("image.illustrated-base-map")).toHaveAttribute(
     "href",
-    "/assets/maps/shanghai-home-aerial-v2.svg",
+    "/assets/maps/shanghai-home-handdrawn-v3.jpg",
   );
   await expect(page.locator(".quest-card h2")).toContainText("第一枚未知坐标");
   await expect(page.locator(".map-stage")).toHaveAttribute("data-concealed", "true");
@@ -98,11 +98,11 @@ test("shows the next exact clue before driving and keeps parking as an optional 
   await expect(page.locator(".fog-content h2")).toHaveText("你最初的过去");
   await expect(page.getByText("解出地点后，请使用正常导航自驾前往。")).toBeVisible();
   await page.getByText("需要停车提示").click({ force: true });
-  await expect(page.getByText(/新上海城市广场地下停车场/)).toBeVisible();
+  await expect(page.getByText(/第二站停车点 · 请使用预先保存的导航位置/)).toBeVisible();
   await expect(page.getByText(/以当日导航和现场指引为准/)).toBeVisible();
 });
 
-test("uses a manual arrival for the adjacent LEGO store without starting GPS", async ({ page }) => {
+test("uses a manual arrival for the adjacent fourth stop without starting GPS", async ({ page }) => {
   await page.addInitScript(() => {
     let watchCount = 0;
     Object.defineProperty(navigator, "geolocation", {
@@ -137,7 +137,7 @@ test("uses a manual arrival for the adjacent LEGO store without starting GPS", a
   expect(await page.evaluate(() => (window as typeof window & { __watchCount: number }).__watchCount)).toBe(0);
 });
 
-test("uses entrance GPS for THE CASTLE and waits for a fifth-floor manual reveal", async ({ page, context, baseURL }) => {
+test("uses entrance GPS for the final stop and waits for a fifth-floor manual reveal", async ({ page, context, baseURL }) => {
   await context.grantPermissions(["geolocation"], { origin: new URL(baseURL!).origin });
   await context.setGeolocation({ latitude: 31.2422, longitude: 121.484, accuracy: 16 });
   await page.goto("/?run=e2e-castle");

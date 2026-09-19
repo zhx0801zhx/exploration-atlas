@@ -18,12 +18,12 @@ describe("formal Shanghai story route", () => {
     ]);
   });
 
-  it("uses the confirmed parking and start labels", () => {
+  it("keeps parking guidance private and free of real place names", () => {
     expect(zones.map((zone) => zone.parkingLabel)).toEqual([
-      "东方吉苑北一门 · 板泉路 1201 弄（起点）",
-      "新上海城市广场地下停车场 · 河南南路 33 号（以当日导航为准）",
-      "上海世茂广场地下停车场 · 南京东路 819 号 B3（以当日开放入口为准）",
-      "益丰·外滩源地下停车场 · 北京东路 99 号（以当日开放入口为准）",
+      "第一站起点 · 请使用预先保存的导航位置",
+      "第二站停车点 · 请使用预先保存的导航位置",
+      "第三站停车点 · 请使用预先保存的导航位置",
+      "第五站停车点 · 请使用预先保存的导航位置",
     ]);
   });
 
@@ -65,9 +65,9 @@ describe("formal Shanghai story route", () => {
     });
   });
 
-  it("records the restaurant time and address", () => {
-    expect(zones[3].subtitle).toContain("北京东路 99 号");
-    expect(zones[3].subtitle).toContain("L501B-1");
+  it("keeps the final reservation time without exposing its address", () => {
+    expect(zones[3].title).toBe("未来 · 最终页");
+    expect(zones[3].subtitle).toBe("第五站 · 今晚 19:30");
     expect(zones[3].subtitle).toContain("19:30");
     expect(zones[3].checkpoints[0].unlockCopy).toContain("19:30");
   });
@@ -92,12 +92,46 @@ describe("formal Shanghai story route", () => {
     }
   });
 
-  it("keeps POP MART and LEGO in one shared map", () => {
+  it("keeps 童年 and 现在 in one shared map", () => {
     expect(zones[2].checkpoints.map((item) => item.label)).toEqual([
-      "POP MART 泡泡玛特上海世茂旗舰店",
-      "LEGO 乐高人民广场旗舰店",
+      "童年",
+      "现在",
     ]);
     expect(zones[2].mysterySubtitle).toContain("同一座建筑");
+  });
+
+  it("uses the five private display names without exposing real destinations", () => {
+    expect(checkpoints.map((checkpoint) => checkpoint.label)).toEqual([
+      "步步生花",
+      "初见",
+      "童年",
+      "现在",
+      "未来",
+    ]);
+    const visibleCopy = zones.flatMap((zone) => [
+      zone.title,
+      zone.subtitle,
+      zone.parkingLabel,
+      ...zone.checkpoints.flatMap((checkpoint) => [
+        checkpoint.label,
+        checkpoint.arriveButtonLabel ?? "",
+      ]),
+    ]).join(" ");
+    for (const privatePlaceName of [
+      "东方吉苑",
+      "豫园",
+      "泡泡玛特",
+      "POP MART",
+      "乐高",
+      "LEGO",
+      "THE CASTLE",
+      "古堡餐厅",
+      "外滩源",
+      "南京东路",
+      "北京东路",
+    ]) {
+      expect(visibleCopy).not.toContain(privatePlaceName);
+    }
   });
 
   it("uses one new illustrated map for each formal area", () => {
