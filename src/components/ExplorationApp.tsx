@@ -456,7 +456,7 @@ export function ExplorationApp({
         introTimer.current = null;
         setProgress((current) => ({ ...current, phase: "map" }));
       },
-      reducedMotion ? 80 : 780,
+      reducedMotion ? 80 : 3380,
     );
   }
 
@@ -559,7 +559,7 @@ export function ExplorationApp({
       )}
       <div className="rotate-notice"><div className="rotate-icon">↻</div><h1>请将 iPad 横过来</h1><p>地图需要一片更宽的羊皮纸。</p></div>
       <MagicAtmosphere phase={progress.phase} giftType={checkpoint.giftType} awake={progress.phase !== "intro"} />
-      {experienceConfig.cartographer.enabled && (
+      {experienceConfig.cartographer.enabled && progress.phase !== "finale" && (
         <button
           className={`compass-secret ${compassHolding ? "is-holding" : ""}`}
           aria-label="指南针"
@@ -621,8 +621,13 @@ export function ExplorationApp({
             <div className="intro-map-lines" />
             {introOpening && (
               <div className="intro-opening-veil" aria-hidden="true">
-                <span>ATLAS UNSEALED</span>
-                <strong>地图正在显影</strong>
+                <div className="intro-opening-map" />
+                <div className="intro-opening-status">
+                  <i>✦</i>
+                  <span>ATLAS UNSEALED</span>
+                  <strong>地图正在显影</strong>
+                  <small>墨迹正在勾勒第一条道路</small>
+                </div>
               </div>
             )}
 
@@ -708,12 +713,21 @@ export function ExplorationApp({
         {progress.phase === "finale" && (
           <motion.section className="finale-screen" key="finale" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="finale-generated-rune" aria-hidden="true" />
+            <button
+              className="finale-home-button"
+              type="button"
+              aria-label={isRehearsalFlow ? "重新彩排" : "回到第一页"}
+              title={isRehearsalFlow ? "重新彩排" : "回到第一页"}
+              onClick={() => void resetAll(true)}
+            >
+              <svg viewBox="0 0 40 40" aria-hidden="true">
+                <circle cx="20" cy="20" r="14" />
+                <path d="M20 8v24M8 20h24M20 8l3.5 8L20 20l-3.5-4z" />
+              </svg>
+            </button>
             <div className="finale-content">
               <div className="final-heart" aria-hidden="true"><i/><span>♡</span></div><span>{experienceConfig.finale.transition}</span><h1>Exploration<br/>Completed</h1><blockquote>{experienceConfig.finale.lines.map((line) => <Fragment key={line}>{line}<br/></Fragment>)}<b>{experienceConfig.finale.signature}</b></blockquote>
               <div className="gallery-strip">{photos.length ? photos.map((photo) => <button key={photo.id} onClick={() => sharePhoto(photo)}><img src={photo.dataUrl} alt="探索复刻照片"/><span>{photo.score} 分 · 保存</span></button>) : <p>五页故事已经收好，新的故事从今晚开始。</p>}</div>
-              <button className="secondary-button" onClick={() => void resetAll(true)}>
-                {isRehearsalFlow ? "重新彩排" : "从第一页重新开始"}
-              </button>
             </div>
           </motion.section>
         )}

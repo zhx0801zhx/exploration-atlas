@@ -102,10 +102,10 @@ describe("formal Shanghai story route", () => {
 
   it("uses one new illustrated map for each formal area", () => {
     expect(zones.map((zone) => zone.illustratedMapAsset)).toEqual([
-      "/assets/maps/shanghai-home-aerial-v2.svg",
-      "/assets/maps/shanghai-yuyuan-aerial-v2.svg",
-      "/assets/maps/shanghai-shimao-aerial-v2.svg",
-      "/assets/maps/shanghai-castle-aerial-v2.svg",
+      "/assets/maps/shanghai-home-handdrawn-v3.jpg",
+      "/assets/maps/shanghai-yuyuan-handdrawn-v3.jpg",
+      "/assets/maps/shanghai-shimao-handdrawn-v3.jpg",
+      "/assets/maps/shanghai-castle-handdrawn-v3.jpg",
     ]);
   });
 

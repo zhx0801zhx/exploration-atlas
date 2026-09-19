@@ -26,6 +26,11 @@ const illustratedMapAssets: Partial<Record<ExplorationZone["mapKind"], string>> 
   city: "/assets/maps/qianjiang-grand-north-v4.png",
 };
 
+function publicAssetUrl(asset?: string) {
+  if (!asset || !asset.startsWith("/")) return asset;
+  return `${import.meta.env.BASE_URL}${asset.replace(/^\/+/, "")}`;
+}
+
 function pendingCoordinateCopy(count: number) {
   if (count <= 1) return "还藏着最后一枚坐标";
   const chinese = ["零", "一", "两", "三", "四", "五"][count] ?? String(count);
@@ -301,7 +306,7 @@ export function MapCanvas({
   const displayedSubtitle = arrived
     ? zone.subtitle
     : concealedSubtitle;
-  const illustratedMap = zone.illustratedMapAsset ?? illustratedMapAssets[zone.mapKind];
+  const illustratedMap = publicAssetUrl(zone.illustratedMapAsset ?? illustratedMapAssets[zone.mapKind]);
   const [failedAsset, setFailedAsset] = useState<string | null>(null);
   const hasIllustratedBase = Boolean(illustratedMap && failedAsset !== illustratedMap);
   const startMapPoint = useMemo(
@@ -575,9 +580,6 @@ export function MapCanvas({
         </svg>
         <MapMagicOverlay giftType={checkpoint.giftType} revealed={arrived} />
       </motion.div>
-      {arrived && illustratedMap && failedAsset === illustratedMap && (
-        <div className="map-illustration-fallback">高清底图暂未载入，已切换线稿模式</div>
-      )}
       {!arrived && (
         <div className="map-concealment" role="status" aria-live="polite">
           <div className="concealment-seal" aria-hidden="true"><span>✦</span></div>

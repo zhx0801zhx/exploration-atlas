@@ -35,7 +35,7 @@ const homeZone: ExplorationZone = {
     west: 121.4994,
     east: 121.5017,
   },
-  illustratedMapAsset: "/assets/maps/shanghai-home-aerial-v2.svg",
+  illustratedMapAsset: "/assets/maps/shanghai-home-handdrawn-v3.jpg",
   checkpoints: [
     {
       id: "home-dream",
@@ -94,7 +94,7 @@ const yuyuanZone: ExplorationZone = {
     west: 121.4817,
     east: 121.4842,
   },
-  illustratedMapAsset: "/assets/maps/shanghai-yuyuan-aerial-v2.svg",
+  illustratedMapAsset: "/assets/maps/shanghai-yuyuan-handdrawn-v3.jpg",
   checkpoints: [
     {
       id: "yuyuan-past",
@@ -153,7 +153,7 @@ const shimaoZone: ExplorationZone = {
     west: 121.4699,
     east: 121.4718,
   },
-  illustratedMapAsset: "/assets/maps/shanghai-shimao-aerial-v2.svg",
+  illustratedMapAsset: "/assets/maps/shanghai-shimao-handdrawn-v3.jpg",
   checkpoints: [
     {
       id: "popmart-childhood",
@@ -232,7 +232,7 @@ const castleZone: ExplorationZone = {
     west: 121.4834,
     east: 121.4853,
   },
-  illustratedMapAsset: "/assets/maps/shanghai-castle-aerial-v2.svg",
+  illustratedMapAsset: "/assets/maps/shanghai-castle-handdrawn-v3.jpg",
   checkpoints: [
     {
       id: "castle-future",
