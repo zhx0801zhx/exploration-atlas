@@ -1158,6 +1158,11 @@ h1, h2, h3, blockquote, .display-type {
 .intro-screen.is-opening .intro-wax-trigger span { animation: waxSealRelease .38s cubic-bezier(.18,.82,.24,1) forwards; }
 .intro-screen.is-opening .intro-wax-trigger b { opacity: 0; transform: translateY(8px); }
 
+.intro-opening-veil { position: absolute; z-index: 12; inset: 0; display: grid; place-content: center; gap: 7px; padding-bottom: 4vh; color: #f4dda5; text-align: center; pointer-events: none; opacity: 0; background: radial-gradient(circle at center, #f7dfa264 0 6%, #9c63333a 22%, transparent 58%); text-shadow: 0 3px 12px #120704; }
+.intro-opening-veil span { font: 700 9px/1 var(--font-inscription); letter-spacing: .28em; }
+.intro-opening-veil strong { font-size: clamp(22px, 3vw, 34px); font-weight: 400; letter-spacing: .1em; }
+.intro-screen.is-opening .intro-opening-veil { animation: introOpeningVeil .78s cubic-bezier(.18,.74,.23,1) both; }
+
 /* Living card magic: visibly animated, finely drawn, and never interactive. */
 .magic-micro-effect { position: absolute; z-index: 3; display: block; pointer-events: none; color: #674429; opacity: .9; overflow: visible; contain: layout paint; }
 .magic-micro-effect svg { display: block; width: 100%; height: 100%; overflow: visible; }
@@ -1265,11 +1270,12 @@ h1, h2, h3, blockquote, .display-type {
 
 @keyframes loadingEnvelopeBreathe { 0%, 100% { opacity: .7; transform: translate(-50%, -50%) scale(.93) rotate(-.3deg); } 50% { opacity: .88; transform: translate(-50%, -51%) scale(.955) rotate(.2deg); } }
 @keyframes loadingSealPulse { 0%, 100% { transform: translateZ(0) scale(.92); opacity: .86; } 50% { transform: translateZ(0) scale(1.04); opacity: 1; } }
-@keyframes openingLetterExit { 0% { opacity: 1; transform: translate3d(0,0,0) scale(1) rotate(-.35deg); } 100% { opacity: 1; transform: translate3d(0,-8px,0) scale(1.008) rotate(-.1deg); } }
+@keyframes openingLetterExit { 0% { opacity: 1; transform: translate3d(0,0,0) scale(1) rotate(-.35deg); } 58% { opacity: .92; transform: translate3d(0,-5px,0) scale(1.002) rotate(-.15deg); } 100% { opacity: 0; transform: translate3d(0,-12px,0) scale(.986) rotate(0); } }
 @keyframes deliveredLetterLift { 0% { opacity: 1; transform: translate3d(0,0,0) rotate(0); } 100% { opacity: .92; transform: translate3d(0,-1.2%,0) rotate(-.05deg); } }
 @keyframes envelopeWindRelease { 0% { opacity: 1; transform: translate3d(0,0,0) scale(1) rotate(0); } 100% { opacity: .92; transform: translate3d(0,1%,0) scale(1.012) rotate(.04deg); } }
 @keyframes envelopeLightSweep { 0% { opacity: 0; transform: translateX(-85%) skewX(-12deg); } 35% { opacity: .75; } 100% { opacity: 0; transform: translateX(110%) skewX(-12deg); } }
 @keyframes waxSealRelease { 0% { transform: translateZ(0) scale(1) rotate(0); } 28% { transform: translateZ(0) scale(1.16) rotate(-3deg); } 58% { opacity: 1; transform: translateZ(0) scale(.93) rotate(4deg); } 100% { opacity: 0; transform: translate3d(3px,22px,0) scale(1.42) rotate(12deg); } }
+@keyframes introOpeningVeil { 0% { opacity: 0; transform: scale(.94); } 30% { opacity: 1; transform: scale(1); } 72% { opacity: .88; } 100% { opacity: 0; transform: scale(1.045); } }
 @keyframes introRevealLayerV3 { 0% { visibility: hidden; opacity: 0; transform: translateZ(0) scale(.985); } 2% { visibility: visible; } 42% { opacity: .56; } 100% { visibility: visible; opacity: 1; transform: translateZ(0) scale(1); } }
 @keyframes introUnfoldMapV3 { 0% { opacity: .2; transform: translateZ(0) scale3d(.045,.93,1) rotateZ(-.4deg); } 42% { opacity: .72; transform: translateZ(0) scale3d(.55,.97,1) rotateZ(-.12deg); } 100% { opacity: 1; transform: translateZ(0) scale3d(1,1,1) rotateZ(0); } }
 @keyframes cinematicCourierDiveV3 { 0% { opacity: 0; transform: translate3d(0,-4vh,0) scale(.16) rotate(-12deg); } 10% { opacity: .42; } 24% { opacity: .78; transform: translate3d(37vw,1vh,0) scale(.42) rotate(-7deg); } 43% { opacity: .98; transform: translate3d(65vw,13vh,0) scale(.9) rotate(1deg); } 58% { opacity: 1; transform: translate3d(86vw,22vh,0) scale(1.36) rotate(6deg); } 71% { opacity: .94; transform: translate3d(114vw,7vh,0) scale(1.06) rotate(2deg); } 86% { opacity: .5; } 100% { opacity: 0; transform: translate3d(158vw,-11vh,0) scale(.48) rotate(-5deg); } }

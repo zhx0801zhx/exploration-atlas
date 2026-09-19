@@ -436,12 +436,14 @@ export function ExplorationApp({
     celebratedArrivals.current.clear();
     if (celebrationTimer.current) window.clearTimeout(celebrationTimer.current);
     if (unlockTimer.current) window.clearTimeout(unlockTimer.current);
+    if (introTimer.current) window.clearTimeout(introTimer.current);
     setCelebration(null);
     setUnlockOpen(false);
     setCameraOpen(false);
     setIntroOpening(false);
     setMockPosition(null);
     setGmOpen(false);
+    window.scrollTo(0, 0);
   }
 
   function openAtlas() {
@@ -450,8 +452,11 @@ export function ExplorationApp({
     setIntroOpening(true);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     introTimer.current = window.setTimeout(
-      () => setProgress((current) => ({ ...current, phase: "map" })),
-      reducedMotion ? 80 : 4650,
+      () => {
+        introTimer.current = null;
+        setProgress((current) => ({ ...current, phase: "map" }));
+      },
+      reducedMotion ? 80 : 780,
     );
   }
 
@@ -614,6 +619,12 @@ export function ExplorationApp({
         {progress.phase === "intro" && (
           <motion.section className={`intro-screen ${introOpening ? "is-opening" : ""} ${introFilmReceiving ? "is-cinematic-receiving" : ""}`} key="intro" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: .22 }}>
             <div className="intro-map-lines" />
+            {introOpening && (
+              <div className="intro-opening-veil" aria-hidden="true">
+                <span>ATLAS UNSEALED</span>
+                <strong>地图正在显影</strong>
+              </div>
+            )}
 
             <div className="sealed-letter opening-letter">
               <div className="envelope-prop" aria-hidden="true" />
@@ -700,7 +711,9 @@ export function ExplorationApp({
             <div className="finale-content">
               <div className="final-heart" aria-hidden="true"><i/><span>♡</span></div><span>{experienceConfig.finale.transition}</span><h1>Exploration<br/>Completed</h1><blockquote>{experienceConfig.finale.lines.map((line) => <Fragment key={line}>{line}<br/></Fragment>)}<b>{experienceConfig.finale.signature}</b></blockquote>
               <div className="gallery-strip">{photos.length ? photos.map((photo) => <button key={photo.id} onClick={() => sharePhoto(photo)}><img src={photo.dataUrl} alt="探索复刻照片"/><span>{photo.score} 分 · 保存</span></button>) : <p>五页故事已经收好，新的故事从今晚开始。</p>}</div>
-              {isRehearsalFlow && <button className="secondary-button" onClick={() => resetAll(true)}>重新彩排</button>}
+              <button className="secondary-button" onClick={() => void resetAll(true)}>
+                {isRehearsalFlow ? "重新彩排" : "从第一页重新开始"}
+              </button>
             </div>
           </motion.section>
         )}
